@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>King Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(135deg, #f0f0f0, #d1e8ff);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        h1 {
+            font-size: 48px;
+            font-weight: bold;
+            color: #007bff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            margin: 0;
+            transition: transform 0.5s ease-in-out;
+        }
+        .game-started h1 {
+            transform: translateY(-200px);
+        }
+        button {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 18px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+            transform: scale(1.05);
+        }
+        .big-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            width: 540px;
+            height: 540px;
+            margin: 20px auto;
+            gap: 6px;
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+        .small-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            width: 170px;
+            height: 170px;
+            position: relative;
+            border-radius: 5px;
+            background-color: #f8f8f8;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            border: 2px solid #ccc;
+        }
+        .cell {
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+            background-color: #fff;
+        }
+        .cell.won, .small-grid.won {
+            background-color: lightgray;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: default;
+            pointer-events: none;
+        }
+        .highlight {
+            border: 4px solid red !important;
+        }
+        #status {
+            display: none;
+            font-size: 18px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        #undoButton, #redoButton, #restartButton {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            display: none;
+        }
+        #redoButton {
+            background-color: #28a745;
+        }
+        #restartButton {
+            background-color: #dc3545;
+        }
+        #undoButton:hover, #redoButton:hover, #restartButton:hover {
+            background-color: #0056b3;
+        }
+
+        /* Rules Section */
+        #rules {
+            display: none;
+            margin-top: 20px;
+            font-size: 16px;
+            color: #333;
+            max-width: 500px;
+            text-align: left;
+        }
+        #rules h2 {
+            font-size: 24px;
+            color: #007bff;
+            margin-bottom: 10px;
+        }
+        #rules ul {
+            list-style-type: disc;
+            padding-left: 20px;
+        }
+        #rules li {
+            margin-bottom: 10px;
+        }
+
+        /* Coin Toss Section */
+        #coin-toss {
+            display: none;
+            margin-top: 20px;
+        }
+        .coin {
+            width: 120px;
+            height: 120px;
+            background-color: #ffcc00;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 50px;
+            font-weight: bold;
+            color: #333;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: flip 2s ease-in-out;
+            box-shadow: 0 0 20px rgba(255, 204, 0, 0.8);
+        }
+        .coin .front, .coin .back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backface-visibility: hidden;
+        }
+        .coin .front {
+            transform: rotateY(0deg);
+        }
+        .coin .back {
+            transform: rotateY(180deg);
+        }
+        @keyframes flip {
+            0% {
+                transform: rotateY(0deg);
+            }
+            50% {
+                transform: rotateY(1800deg);
+            }
+            100% {
+                transform: rotateY(0deg);
+            }
+        }
+
+        /* Floating Background Elements */
+        .floating-symbol {
+            position: absolute;
+            font-size: 24px;
+            color: rgba(0, 123, 255, 0.3);
+            animation: float 10s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) translateX(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-50px) translateX(50px) rotate(180deg);
+            }
+            100% {
+                transform: translateY(0) translateX(0) rotate(360deg);
+            }
+        }
+
+        /* Confirmation Dialog */
+        #confirmation-dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            text-align: center;
+        }
+        #confirmation-dialog p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+        #confirmation-dialog button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+        }
+        #confirm-restart {
+            background-color: #28a745;
+            color: white;
+        }
+        #cancel-restart {
+            background-color: #dc3545;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>King Tic-Tac-Toe</h1>
+    <button onclick="showRules()">Play</button>
+    <div id="rules">
+        <h2>How to Play</h2>
+        <ul>
+            <li>The game is played on a 3x3 grid of smaller 3x3 grids.</li>
+            <li>Players take turns placing their symbol (X or O) in an empty cell.</li>
+            <li>Your move determines the next grid your opponent must play in.</li>
+            <li>Win a smaller grid by getting 3 of your symbols in a row, column, or diagonal.</li>
+            <li>Win the game by winning 3 smaller grids in a row, column, or diagonal.</li>
+        </ul>
+        <button onclick="startCoinToss()">Start</button>
+    </div>
+    <div id="coin-toss">
+        <div class="coin" id="coin">
+            <div class="front">X</div>
+            <div class="back">O</div>
+        </div>
+        <p id="toss-result" style="display: none;"></p>
+    </div>
+    <div class="big-grid" id="bigGrid"></div>
+    <p id="status">Player X's Turn</p>
+    <button onclick="undoMove()" id="undoButton">I am Dum</button>
+    <button onclick="redoMove()" id="redoButton">Not My Mistake</button>
+    <button onclick="showConfirmationDialog()" id="restartButton">Restart Game</button>
+
+    <!-- Confirmation Dialog -->
+    <div id="confirmation-dialog">
+        <p>Do you want to restart the game?</p>
+        <button id="confirm-restart" onclick="restartGame()">Yes</button>
+        <button id="cancel-restart" onclick="hideConfirmationDialog()">No</button>
+    </div>
+
+    <script>
+        const bigGrid = document.getElementById("bigGrid");
+        const statusText = document.getElementById("status");
+        const undoButton = document.getElementById("undoButton");
+        const redoButton = document.getElementById("redoButton");
+        const restartButton = document.getElementById("restartButton");
+        const rulesSection = document.getElementById("rules");
+        const coinTossSection = document.getElementById("coin-toss");
+        const coin = document.getElementById("coin");
+        const tossResult = document.getElementById("toss-result");
+        const confirmationDialog = document.getElementById("confirmation-dialog");
+        let gameState = Array(9).fill(null).map(() => Array(9).fill(""));
+        let bigGridState = Array(9).fill(null);
+        let currentPlayer = "X";
+        let nextBigGrid = null;
+        let moveHistory = [];
+        let redoHistory = [];
+
+        // Create floating symbols
+        const symbols = ["X", "O", "#"];
+        const numSymbols = 20; // Number of floating symbols
+
+        for (let i = 0; i < numSymbols; i++) {
+            const symbol = document.createElement("div");
+            symbol.classList.add("floating-symbol");
+            symbol.textContent = symbols[Math.floor(Math.random() * symbols.length)];
+            symbol.style.left = `${Math.random() * 100}vw`;
+            symbol.style.top = `${Math.random() * 100}vh`;
+            symbol.style.animationDuration = `${Math.random() * 10 + 5}s`; // Random animation duration
+            document.body.appendChild(symbol);
+        }
+
+        function showRules() {
+            document.querySelector("button").style.display = "none";
+            rulesSection.style.display = "block";
+        }
+
+        function startCoinToss() {
+            rulesSection.style.display = "none";
+            coinTossSection.style.display = "block";
+
+            // Randomly determine the winner of the coin toss
+            const winner = Math.random() < 0.5 ? "X" : "O";
+
+            // Show the winner text after the coin toss animation finishes
+            setTimeout(() => {
+                tossResult.textContent = `Player ${winner} wins the toss and starts first!`;
+                tossResult.style.display = "block";
+            }, 2000); // 2 seconds delay (after the coin flip animation)
+
+            // Start the game after a short delay
+            setTimeout(() => {
+                coinTossSection.style.display = "none";
+                startGame(winner);
+            }, 3000); // 3 seconds delay
+        }
+
+        function startGame(firstPlayer) {
+            currentPlayer = firstPlayer;
+            document.body.classList.add("game-started");
+            bigGrid.style.display = "grid";
+            statusText.style.display = "block";
+            undoButton.style.display = "block";
+            redoButton.style.display = "block";
+            restartButton.style.display = "block";
+            createBoard();
+        }
+
+        function createBoard() {
+            for (let i = 0; i < 9; i++) {
+                const smallGrid = document.createElement("div");
+                smallGrid.classList.add("small-grid");
+                smallGrid.dataset.index = i;
+
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.big = i;
+                    cell.dataset.small = j;
+                    cell.addEventListener("click", handleMove);
+                    smallGrid.appendChild(cell);
+                }
+                bigGrid.appendChild(smallGrid);
+            }
+        }
+
+        function handleMove(event) {
+            const cell = event.target;
+            const bigIndex = Number(cell.dataset.big);
+            const smallIndex = Number(cell.dataset.small);
+
+            if (gameState[bigIndex][smallIndex] || (nextBigGrid !== null && nextBigGrid !== bigIndex)) return;
+
+            gameState[bigIndex][smallIndex] = currentPlayer;
+            cell.textContent = currentPlayer;
+
+            // Save the current state of nextBigGrid before updating it
+            const previousNextBigGrid = nextBigGrid;
+
+            if (checkWin(gameState[bigIndex])) {
+                bigGridState[bigIndex] = currentPlayer;
+                const smallGrid = document.querySelector(`[data-index='${bigIndex}']`);
+                smallGrid.classList.add("won");
+                smallGrid.innerHTML = `<div style='font-size: 50px; position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;'>${currentPlayer}</div>`;
+                moveHistory.push({ bigIndex, smallIndex, scored: true, previousNextBigGrid, currentPlayer });
+            } else {
+                moveHistory.push({ bigIndex, smallIndex, scored: false, previousNextBigGrid, currentPlayer });
+            }
+
+            if (checkWin(bigGridState)) {
+                statusText.textContent = `Player ${currentPlayer} Wins!`;
+                document.querySelectorAll(".cell").forEach(cell => cell.removeEventListener("click", handleMove));
+                return;
+            }
+
+            nextBigGrid = bigGridState[smallIndex] ? null : smallIndex;
+            highlightNextGrid();
+            switchTurn();
+
+            // Clear redo history when a new move is made
+            redoHistory = [];
+        }
+
+        function switchTurn() {
+            currentPlayer = currentPlayer === "X" ? "O" : "X";
+            statusText.textContent = `Player ${currentPlayer}'s Turn`;
+        }
+
+        function checkWin(grid) {
+            const wins = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8],
+                [0, 4, 8], [2, 4, 6]
+            ];
+            return wins.some(pattern => pattern.every(index => grid[index] === currentPlayer));
+        }
+
+        function undoMove() {
+            if (moveHistory.length === 0) return;
+
+            const lastMove = moveHistory.pop();
+            const { bigIndex, smallIndex, scored, previousNextBigGrid, currentPlayer: previousPlayer } = lastMove;
+
+            // Reset the cell
+            gameState[bigIndex][smallIndex] = "";
+            document.querySelector(`[data-big='${bigIndex}'][data-small='${smallIndex}']`).textContent = "";
+
+            // If the move resulted in a scored grid, reset the grid
+            if (scored) {
+                bigGridState[bigIndex] = null;
+                const smallGrid = document.querySelector(`[data-index='${bigIndex}']`);
+                smallGrid.classList.remove("won");
+                smallGrid.innerHTML = ""; // Clear the winning symbol
+
+                // Restore all cells in that grid
+                for (let j = 0; j < 9; j++) {
+                    const cell = document.querySelector(`[data-big='${bigIndex}'][data-small='${j}']`);
+                    cell.textContent = gameState[bigIndex][j];
+                    cell.style.pointerEvents = "auto"; // Allow moves in this grid again
+                }
+            }
+
+            // Restore the previous nextBigGrid state
+            nextBigGrid = previousNextBigGrid;
+            highlightNextGrid();
+
+            // Restore the previous player's turn
+            currentPlayer = previousPlayer;
+            statusText.textContent = `Player ${currentPlayer}'s Turn`;
+
+            // Add the undone move to the redo history
+            redoHistory.push(lastMove);
+        }
+
+        function redoMove() {
+            if (redoHistory.length === 0) return;
+
+            const lastUndoneMove = redoHistory.pop();
+            const { bigIndex, smallIndex, scored, previousNextBigGrid, currentPlayer: previousPlayer } = lastUndoneMove;
+
+            // Reapply the move
+            gameState[bigIndex][smallIndex] = previousPlayer;
+            document.querySelector(`[data-big='${bigIndex}'][data-small='${smallIndex}']`).textContent = previousPlayer;
+
+            // If the move resulted in a scored grid, reapply the score
+            if (scored) {
+                bigGridState[bigIndex] = previousPlayer;
+                const smallGrid = document.querySelector(`[data-index='${bigIndex}']`);
+                smallGrid.classList.add("won");
+                smallGrid.innerHTML = `<div style='font-size: 50px; position: absolute; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;'>${previousPlayer}</div>`;
+            }
+
+            // Restore the nextBigGrid state
+            nextBigGrid = bigGridState[smallIndex] ? null : smallIndex;
+            highlightNextGrid();
+
+            // Restore the player's turn
+            currentPlayer = previousPlayer === "X" ? "O" : "X";
+            statusText.textContent = `Player ${currentPlayer}'s Turn`;
+
+            // Add the redone move back to the move history
+            moveHistory.push(lastUndoneMove);
+        }
+
+        function highlightNextGrid() {
+            document.querySelectorAll(".small-grid").forEach(grid => grid.classList.remove("highlight"));
+            if (nextBigGrid !== null) {
+                document.querySelector(`[data-index='${nextBigGrid}']`).classList.add("highlight");
+            }
+        }
+
+        function showConfirmationDialog() {
+            confirmationDialog.style.display = "block";
+        }
+
+        function hideConfirmationDialog() {
+            confirmationDialog.style.display = "none";
+        }
+
+        function restartGame() {
+            // Reset all game states
+            gameState = Array(9).fill(null).map(() => Array(9).fill(""));
+            bigGridState = Array(9).fill(null);
+            currentPlayer = "X";
+            nextBigGrid = null;
+            moveHistory = [];
+            redoHistory = [];
+
+            // Clear the board
+            bigGrid.innerHTML = "";
+
+            // Hide the game grid and controls
+            bigGrid.style.display = "none";
+            statusText.style.display = "none";
+            undoButton.style.display = "none";
+            redoButton.style.display = "none";
+            restartButton.style.display = "none";
+
+            // Hide the confirmation dialog
+            hideConfirmationDialog();
+
+            // Go back to the coin toss
+            startCoinToss();
+        }
+    </script>
+</body>
+</html><ALOASK-SEPARATE-EDITORS>html {
+   background: linear-gradient(to right, dodgerblue 0%, deepskyblue 100%);
+}
+h1{
+   color: white;
+}
+<ALOASK-SEPARATE-EDITORS>console.log('JavaScript Console');
